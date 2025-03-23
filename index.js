@@ -1,4 +1,4 @@
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const express = require('express')
 const app = express()
 const cors = require('cors')
@@ -32,10 +32,33 @@ async function run() {
 
 
         const menuDB = client.db("bestuBoss").collection('menu')
+        const cartDB = client.db("bestuBoss").collection('carts')
 
 
         app.get("/menu", async (req, res) => {
             const result = await menuDB.find().toArray()
+            res.send(result)
+        })
+
+        // carts api 
+
+        app.delete("/carts/:id", async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            const reqult = await cartDB.deleteOne(query)
+            res.send(reqult)
+        })
+
+        app.get("/carts", async (req, res) => {
+            const email = req.query.email
+            const query = { email: email }
+            const result = await cartDB.find(query).toArray()
+            res.send(result)
+        })
+
+        app.post('/carts', async (req, res) => {
+            const body = req.body
+            const result = await cartDB.insertOne(body)
             res.send(result)
         })
 

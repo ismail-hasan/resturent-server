@@ -33,10 +33,40 @@ async function run() {
 
         const menuDB = client.db("bestuBoss").collection('menu')
         const cartDB = client.db("bestuBoss").collection('carts')
+        const userDB = client.db("bestuBoss").collection('users')
 
 
         app.get("/menu", async (req, res) => {
             const result = await menuDB.find().toArray()
+            res.send(result)
+        })
+
+        // users api create 
+
+        app.delete('/users/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            const result = await userDB.deleteOne(query)
+            res.send(result)
+        })
+
+        app.get("/users", async (req, res) => {
+            const result = await userDB.find().toArray()
+            res.send(result)
+        })
+
+        app.post("/users", async (req, res) => {
+            const body = req.body
+            const email = body.email
+            console.log(email)
+            const query = { email: email }
+            const exitignUser = await userDB.findOne(query)
+
+            if (exitignUser) {
+                return res.send({ message: "user already exit", insertedId: null })
+            }
+
+            const result = await userDB.insertOne(body)
             res.send(result)
         })
 

@@ -1,6 +1,7 @@
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const express = require('express')
 const app = express()
+const jwt = require('jsonwebtoken');
 const cors = require('cors')
 require('dotenv').config()
 const port = process.env.PORT || 5000
@@ -36,6 +37,30 @@ async function run() {
         const userDB = client.db("bestuBoss").collection('users')
 
 
+        const veryfyToken = (req, res, next) => {
+            console.log(req.headers.authorization)
+            if (!req.headers.authorization) {
+                return res.status(403).send({ message: "forbidden bro" })
+            }
+
+            const token = req.headers.authorization.split(' ')[1]
+            jwt.verify(token, process.env.ACCESS_TOKEN, (err, decoded) => {
+                if (err) {
+                    return res.status(402).send({ message: "forbidden bro" })
+                }
+                req.decoded = decoded
+                next()
+            })
+        }
+
+        // jwt token api 
+        app.post('/jwt', (req, res) => {
+            const user = req.body
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN, { expiresIn: '1h' })
+            res.send({ token })
+        })
+
+
         app.get("/menu", async (req, res) => {
             const result = await menuDB.find().toArray()
             res.send(result)
@@ -50,7 +75,7 @@ async function run() {
             res.send(result)
         })
 
-        app.get("/users", async (req, res) => {
+        app.get("/users", veryfyToken, async (req, res) => {
             const result = await userDB.find().toArray()
             res.send(result)
         })
@@ -58,7 +83,6 @@ async function run() {
         app.post("/users", async (req, res) => {
             const body = req.body
             const email = body.email
-            console.log(email)
             const query = { email: email }
             const exitignUser = await userDB.findOne(query)
 
@@ -67,6 +91,20 @@ async function run() {
             }
 
             const result = await userDB.insertOne(body)
+            res.send(result)
+        })
+
+        app.patch("/users/admin/:id", async (req, res) => {
+            const id = req.params.id
+            console.log(id)
+            const filter = { _id: new ObjectId(id) }
+            const updareDoc = {
+                $set: {
+                    role: 'admin'
+                }
+            }
+
+            const result = await userDB.updateOne(filter, updareDoc)
             res.send(result)
         })
 
